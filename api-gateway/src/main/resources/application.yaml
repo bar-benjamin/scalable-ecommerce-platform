@@ -1,0 +1,91 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      # Explicit routes are preferred over auto-discovery routes.
+      # lb:// tells the gateway to resolve the hostname through Eureka
+      # and load-balance across available instances.
+      routes:
+
+        - id: user-service-auth
+          uri: lb://user-service
+          predicates:
+            - Path=/api/auth/**
+
+        - id: user-service-protected
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+
+        - id: product-service-public
+          uri: lb://product-service
+          predicates:
+            - Path=/api/products/**
+            - Method=GET
+
+        - id: product-service-protected
+          uri: lb://product-service
+          predicates:
+            - Path=/api/products/**
+            - Method=POST,PUT,DELETE,PATCH
+
+        - id: cart-service
+          uri: lb://cart-service
+          predicates:
+            - Path=/api/cart/**
+
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/orders/**
+
+        - id: payment-service-webhook
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payments/webhook
+
+        - id: payment-service-protected
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payments/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+
+# JWT secret must match the secret used by user-service to sign tokens.
+# Injected via environment variable — never hardcoded in source.
+jwt:
+  secret: ${JWT_SECRET}
+
+# Rate limiter: token bucket per remote IP address.
+rate-limiter:
+  capacity: 100
+  refill-tokens: 100
+  refill-period-seconds: 60
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
