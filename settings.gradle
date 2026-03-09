@@ -1,10 +1,12 @@
 rootProject.name = 'ecommerce-platform'
 
+
 include 'discovery-server'
+/* TODO
 include 'api-gateway'
 include 'user-service'
 include 'product-service'
 include 'cart-service'
 include 'order-service'
 include 'payment-service'
-include 'notification-service'
+include 'notification-service */
