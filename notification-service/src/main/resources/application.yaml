@@ -32,8 +32,8 @@ spring:
 
 sendgrid:
   api-key: ${SENDGRID_API_KEY}
-  from-email: ${SENDGRID_FROM_EMAIL:noreply@ecommerce.com}
-  from-name: ${SENDGRID_FROM_NAME:E-Commerce Platform}
+  from-email: ${SENDGRID_FROM_EMAIL:bar.benjamin123@gmail.com}
+  from-name: ${SENDGRID_FROM_NAME:Scalable E-Commerce Platform}
 
 kafka:
   topics:
