@@ -1,131 +1,135 @@
-# E-Commerce Platform
+# E-Commerce Microservices Platform
 
-Microservices e-commerce platform built with Java, Spring Boot and Spring Cloud
-## Architecture
-```
-                        ┌──────────────────────┐
-                        │      api-gateway      │
-                        │  (Spring Cloud GW)    │
-                        │  - routing            │
-                        │  - JWT auth filter    │
-                        │  - rate limiting      │
-                        └──────────┬────────────┘
-                                   │ routes (REST)
-              ┌────────────────────┼────────────────────┐
-              │                    │                     │
-              ▼                    ▼                     ▼
-   ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
-   │   user-service   │  │ product-service  │  │   cart-service   │
-   │ - registration   │  │ - catalog        │  │ - cart CRUD      │
-   │ - JWT auth       │  │ - inventory      │  │ - item quantities│
-   │ - profiles       │  │ - categories     │  │ - cart expiry    │
-   └──────────────────┘  └──────────────────┘  └──────────────────┘
-              │ Feign (REST)                        │ Feign (REST)
-              └──────────────────┬──────────────────┘
-                                 ▼
-                    ┌────────────────────────┐
-                    │      order-service     │
-                    │  - order lifecycle     │
-                    │  - status tracking     │
-                    │  - order history       │
-                    └────────────┬───────────┘
-                                 │ Kafka: order-placed
-                    ┌────────────┴────────────┐
-                    ▼                         ▼
-       ┌─────────────────────┐   ┌──────────────────────────┐
-       │   payment-service   │   │   notification-service   │
-       │ - Stripe SDK        │   │ - SendGrid (email)       │
-       │ - charge / refund   │   │ - order confirmations    │
-       └──────────┬──────────┘   │ - shipping updates       │
-                  │              └──────────────────────────┘
-                  │ Kafka: payment-confirmed
-                  ▼
-       ┌─────────────────────┐
-       │     order-service   │  (status update: PAID)
-       └─────────────────────┘
+### UI
+![preview](./images/preview.gif)
 
-  ┌──────────────────────────────────────────────────────────────┐
-  │                  discovery-server (Eureka)                   │
-  │  all services register here — gateway resolves via Eureka    │
-  └──────────────────────────────────────────────────────────────┘
+### Architecture
+![architecture](./images/architecture.png)
 
-  ┌──────────────────────────────────────────────────────────────┐
-  │             Observability & Infrastructure                   │
-  │  Prometheus -> scrapes /actuator/prometheus -> all services  │
-  │  Grafana    -> dashboards                   -> Prometheus    │
-  │  ELK Stack  -> aggregates logs              -> all services  │
-  │  Kafka topics: order-placed                                  │
-  │                payment-confirmed                             │
-  │                notification-trigger                          │
-  └──────────────────────────────────────────────────────────────┘
-```
+### UML
+![uml_diagram](./images/uml_diagram.png)
 
-## Tech Stack
+### Database Schema
+![sql](./images/sql.png)
 
-| Concern               | Technology                          |
-|-----------------------|-------------------------------------|
-| Language              | Java 17 (JDK 21 toolchain)          |
-| Framework             | Spring Boot 3.3.5                   |
-| Service mesh          | Spring Cloud 2023.0.3               |
-| Build                 | Gradle (Groovy DSL)                 |
-| Service discovery     | Eureka (Spring Cloud Netflix)       |
-| API Gateway           | Spring Cloud Gateway                |
-| Sync communication    | OpenFeign (REST)                    |
-| Async communication   | Apache Kafka                        |
-| Database              | PostgreSQL (per-service schema)     |
-| Payments              | Stripe Java SDK                     |
-| Email                 | SendGrid Java SDK                   |
-| Containerization      | Docker + Docker Compose             |
-| Monitoring            | Prometheus + Grafana                |
-| Logging               | ELK Stack                           |
-| CI/CD                 | GitHub Actions                      |
+### Swagger API
+![swag](./images/swag.png)
 
-## Services
+## Table of Contents
+- [Overview](#0-overview)
+- [Usage](#1-usage)
+- [Project Structure](#2-project-structure)
 
-| Service                | Port  | Responsibility                            |
-|------------------------|-------|-------------------------------------------|
-| `discovery-server`     | 8761  | Eureka service registry                   |
-| `api-gateway`          | 8080  | Routing, JWT validation, rate limiting    |
-| `user-service`         | 8081  | Registration, JWT issuance, profiles      |
-| `product-service`      | 8082  | Catalog, categories, inventory            |
-| `cart-service`         | 8083  | Cart CRUD, quantities, scheduled expiry   |
-| `order-service`        | 8084  | Order lifecycle, Kafka producer/consumer  |
-| `payment-service`      | 8085  | Stripe charges, refunds, webhooks         |
-| `notification-service` | 8086  | SendGrid email, Kafka consumer            |
+---
 
-## Getting Started
+## Overview
+
+Developed an end-to-end e-commerce platform using a microservices' architecture using 
+Java, Spring Boot and Spring Cloud orchestrated via Docker Compose, and built with Gradle.
+The system is composed of 8 independent microservices covering user authentication,
+product catalog, shopping cart, order management, payment processing, and email notifications.
+
+Services communicate synchronously via OpenFeign (REST) and asynchronously via Apache Kafka.
+All services register with a central Eureka discovery server and are exposed to clients through
+a single Spring Cloud Gateway that handles JWT validation and load balancing/rate limiting.
+
+1. `Spring Cloud Gateway` - single entry point for all client traffic; handles JWT auth filter, rate limiting per IP, and Eureka-backed load-balanced routing to downstream services
+2. `Eureka Service Registry` - register services on startup and the gateway resolves hostnames dynamically without hardcoded URLs
+3. `OpenFeign` - declarative HTTP client for synchronous inter-service calls between services
+4. `Apache Kafka` - async event bus for the order lifecycle; topics `order-placed` and `payment-confirmed`
+5. `Stripe Java SDK` - payment intent creation, webhook signature verification, and refund issuance
+6. `SendGrid Java SDK` - transactional email delivery for order and payment confirmations
+7. `PostgreSQL` - one shared Postgres instance with per-service schemas for isolation
+
+---
 
 ### Prerequisites
 - JDK 21
-- Docker + Docker Compose
-- Gradle 8+
+- Docker Desktop
+- IntelliJ IDEA Ultimate
+- Gradle
 
 ### Run
+
+**Step 1 - Open the project and Set up the JDK**
+
+Go to **File → Project Structure → Project**, set SDK to JDK 21 and language level to 17.
+
+**Step 2 - Set up infrastructure in Terminal**
+
 ```bash
-# Start the full stack
-docker compose up -d
-
-# Or run a single service from the monorepo root
-./gradlew :user-service:bootRun
+docker compose up -d postgres zookeeper kafka discovery-server
 ```
 
-### Build
+Verify all four are healthy before proceeding:
 ```bash
-./gradlew build
+docker compose ps
 ```
 
-## Project Structure
+Eureka dashboard: `http://localhost:8761`
+
+**Step 3 - Create Run Configurations**
+
+Go to **Run → Edit Configurations → + → Spring Boot** and create one configuration per service:
+
+| Service                |
+|------------------------|
+| `user-service`         |
+| `product-service`      |
+| `cart-service`         |
+| `order-service`        |
+| `payment-service`      | 
+| `notification-service` |
+| `api-gateway`          |
+
+**Step 4 - Run services in order**
+
+Start services in this sequence, waiting ~10 seconds between each:
+
 ```
-ecommerce-platform/
-├── api-gateway/
-├── cart-service/
-├── discovery-server/
-├── notification-service/
-├── order-service/
-├── payment-service/
-├── product-service/
-├── user-service/
-├── build.gradle          # configuration
-├── settings.gradle       # modules
-└── .gitignore
+1. user-service
+2. product-service
+3. cart-service
+4. order-service
+5. payment-service
+6. notification-service
+7. api-gateway
 ```
+
+Watch the Eureka dashboard at `http://localhost:8761` - services appear as they register.
+
+**Step 5 - Verify**
+
+```bash
+# Health check
+GET http://localhost:8080/actuator/health
+
+# Register a user
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123",
+  "first_name": "Test",
+  "last_name": "User"
+}
+```
+
+A successful registration returns a JWT token. Use it as `Bearer <token>` for all subsequent requests.
+
+#### Service Ports
+
+| Service                | Port  | Responsibility                                    |
+|------------------------|-------|---------------------------------------------------|
+| `api-gateway`          | 8080  | Routing, JWT validation, rate limiting            |
+| `discovery-server`     | 8761  | Eureka service registry                           |
+| `user-service`         | 8081  | Registration, JWT issuance, profile management    |
+| `product-service`      | 8082  | Catalog, categories, inventory tracking           |
+| `cart-service`         | 8083  | Cart CRUD, item quantities, scheduled cart expiry |
+| `order-service`        | 8084  | Order lifecycle, Kafka producer/consumer          |
+| `payment-service`      | 8085  | Stripe charges, refunds, webhook handling         |
+| `notification-service` | 8086  | SendGrid email, Kafka consumer                    |
+
+Each service is an independent subproject with its own `build.gradle`, `Dockerfile`, and `application.yml`.
+Shared dependency versions are declared once in the root `build.gradle` via Spring Boot.
