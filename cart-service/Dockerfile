@@ -1,29 +1,30 @@
 FROM eclipse-temurin:21-jdk-jammy AS builder
-
 WORKDIR /app
 
 COPY gradlew .
 COPY gradle/ gradle/
 COPY settings.gradle .
 COPY build.gradle .
-COPY cart-service/build.gradle cart-service/
+
+COPY discovery-server/build.gradle    discovery-server/
+COPY api-gateway/build.gradle         api-gateway/
+COPY user-service/build.gradle        user-service/
+COPY product-service/build.gradle     product-service/
+COPY cart-service/build.gradle        cart-service/
+COPY order-service/build.gradle       order-service/
+COPY payment-service/build.gradle     payment-service/
+COPY notification-service/build.gradle notification-service/
 
 RUN chmod +x gradlew
 RUN ./gradlew :cart-service:dependencies --no-daemon
 
 COPY cart-service/src cart-service/src
-
-RUN ./gradlew :cart-service:bootJar --no-daemon -x test
+RUN ./gradlew :cart-service:bootJar --no-daemon
 
 FROM eclipse-temurin:21-jre-jammy
-
 WORKDIR /app
-
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
-USER appuser
-
 COPY --from=builder /app/cart-service/build/libs/cart-service.jar app.jar
-
+USER appuser
 EXPOSE 8083
-
 ENTRYPOINT ["java", "-jar", "app.jar"]
