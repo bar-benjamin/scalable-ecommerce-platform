@@ -1,7 +1,7 @@
 # E-Commerce Microservices Platform
 
 ### Architecture
-![architecture](images/diagram.png)
+![architecture](images/architecture.png)
 
 ### Eureka Registry
 ![eureka](images/eureka.png)
