@@ -89,3 +89,18 @@ management:
 logging:
   level:
     org.springframework.cloud.gateway: INFO
+
+globalcors:
+  cors-configurations:
+    '[/**]':
+      allowedOriginPatterns: "*"
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - PATCH
+        - OPTIONS
+      allowedHeaders: "*"
+      allowCredentials: false
+      maxAge: 3600

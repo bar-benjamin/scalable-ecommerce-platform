@@ -11,6 +11,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Component
 public class RateLimitingFilter implements GlobalFilter, Ordered {
@@ -27,7 +28,7 @@ public class RateLimitingFilter implements GlobalFilter, Ordered {
     // Each entry holds [available_tokens, last_refill_timestamp_ms].
     // ConcurrentHashMap for thread safety across the reactive event loop threads.
     // Example: "192.168.1.42" -> [8, 1741515600000]
-    private final ConcurrentHashMap<String, long[]> buckets = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, AtomicLong[]> buckets = new ConcurrentHashMap<>();
 
     public RateLimitingFilter(
             @Value("${rate-limiter.capacity}") int capacity,
@@ -66,24 +67,27 @@ public class RateLimitingFilter implements GlobalFilter, Ordered {
 
     // It tracks how many requests each client IP has made using a token bucket algorithm.
     // Each IP gets a bucket of tokens, each request consumes one, and tokens refill periodically
-    private synchronized boolean tryConsume(String client_ip) {
+    private boolean tryConsume(String client_ip) {
         long now = Instant.now().toEpochMilli();
-        long[] bucket = buckets.computeIfAbsent(client_ip,
-                k -> new long[]{capacity, now});
+        AtomicLong[] bucket = buckets.computeIfAbsent(client_ip, k -> new AtomicLong[]{
+                new AtomicLong(capacity),
+                new AtomicLong(now)
+        });
 
-        long elapsed = now - bucket[1];
+        long last_refill = bucket[1].get();
+        long elapsed = now - last_refill;
         long tokens_to_add = (elapsed / refill_period_millis) * refill_tokens;
 
-        if (tokens_to_add > 0) {
-            bucket[0] = Math.min(capacity, bucket[0] + tokens_to_add);
-            bucket[1] = now;
+        if (tokens_to_add > 0 && bucket[1].compareAndSet(last_refill, now)) {
+            bucket[0].updateAndGet(t -> Math.min(capacity, t + tokens_to_add));
         }
 
-        if (bucket[0] > 0) {
-            --bucket[0];
-            return true;
-        }
+        long prev;
+        do {
+            prev = bucket[0].get();
+            if (prev <= 0) return false;
+        } while (!bucket[0].compareAndSet(prev, prev - 1));
 
-        return false;
+        return true;
     }
 }

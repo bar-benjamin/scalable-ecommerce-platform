@@ -1,9 +1,9 @@
 package com.ecommerce.user.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 
 public class UpdateProfileRequest {
-
     @NotBlank(message = "First name is required")
     private String first_name;
 

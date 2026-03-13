@@ -1,24 +1,16 @@
 # E-Commerce Microservices Platform
 
-### UI
-![preview](./images/preview.gif)
-
 ### Architecture
-![architecture](./images/architecture.png)
+![architecture](images/diagram.png)
 
-### UML
-![uml_diagram](./images/uml_diagram.png)
+### Eureka Registry
+![eureka](images/eureka.png)
 
-### Database Schema
-![sql](./images/sql.png)
+### [Swagger API](https://app.swaggerhub.com/apis/BARBENJAMIN123/ecommerce/1.0.0)
+![swagger](images/swagger.png)
 
-### Swagger API
-![swag](./images/swag.png)
-
-## Table of Contents
-- [Overview](#0-overview)
-- [Usage](#1-usage)
-- [Project Structure](#2-project-structure)
+### PostgreSQL Database Schema
+![postgresql_schemas](./images/postgresql_schemas.png)
 
 ---
 
@@ -101,35 +93,71 @@ Watch the Eureka dashboard at `http://localhost:8761` - services appear as they 
 **Step 5 - Verify**
 
 ```bash
-# Health check
-GET http://localhost:8080/actuator/health
-
-# Register a user
+# Test 1: Register a user
 POST http://localhost:8080/api/auth/register
 Content-Type: application/json
 
 {
   "email": "test@example.com",
   "password": "password123",
-  "first_name": "Test",
-  "last_name": "User"
+  "firstName": "Test",
+  "lastName": "User"
+}
+
+# Output:
+{
+    "token": "{{token}}",
+    "user": {
+        "id": 1,
+        "email": "test@example.com",
+        "role": "CUSTOMER",
+        "firstName": "Test",
+        "lastName": "User",
+        "createdAt": "2026-03-13T12:17:22.827925Z",
+        "updatedAt": "2026-03-13T12:17:22.827926Z"
+    },
+
+    "tokenType": "Bearer",
+    "expiresInMs": 86400000
 }
 ```
 
-A successful registration returns a JWT token. Use it as `Bearer <token>` for all subsequent requests.
+Note: A successful registration returns a JWT token. Use it as `Bearer <token>` for all subsequent requests.
+
+```bash
+# Test 2: Get user profile
+GET http://localhost:8080/api/users/1
+Authorization: Bearer {{token}}
+
+# Output:
+{
+"id": 1,
+"email": "test@example.com",
+"role": "CUSTOMER",
+"firstName": "Test",
+"lastName": "User",
+"createdAt": "2026-03-13T12:17:22.827925Z",
+"updatedAt": "2026-03-13T12:17:22.827926Z"
+}
+```
+```bash
+# Test 3: Browse products catalog
+GET http://localhost:8080/api/products
+# No authorization needed
+```
 
 #### Service Ports
 
 | Service                | Port  | Responsibility                                    |
 |------------------------|-------|---------------------------------------------------|
 | `api-gateway`          | 8080  | Routing, JWT validation, rate limiting            |
-| `discovery-server`     | 8761  | Eureka service registry                           |
 | `user-service`         | 8081  | Registration, JWT issuance, profile management    |
 | `product-service`      | 8082  | Catalog, categories, inventory tracking           |
 | `cart-service`         | 8083  | Cart CRUD, item quantities, scheduled cart expiry |
 | `order-service`        | 8084  | Order lifecycle, Kafka producer/consumer          |
 | `payment-service`      | 8085  | Stripe charges, refunds, webhook handling         |
 | `notification-service` | 8086  | SendGrid email, Kafka consumer                    |
+| `discovery-server`     | 8761  | Eureka service registry                           |
 
 Each service is an independent subproject with its own `build.gradle`, `Dockerfile`, and `application.yml`.
 Shared dependency versions are declared once in the root `build.gradle` via Spring Boot.

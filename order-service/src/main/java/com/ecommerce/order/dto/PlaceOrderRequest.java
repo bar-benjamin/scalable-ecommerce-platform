@@ -1,5 +1,6 @@
 package com.ecommerce.order.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 
 public class PlaceOrderRequest {

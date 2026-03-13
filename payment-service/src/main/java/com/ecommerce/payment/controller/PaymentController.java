@@ -4,6 +4,7 @@ import com.ecommerce.payment.dto.PaymentResponse;
 import com.ecommerce.payment.dto.RefundRequest;
 import com.ecommerce.payment.service.PaymentService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +23,16 @@ public class PaymentController {
             @RequestHeader("X-User-Id") String user_id,
             @RequestHeader("X-User-Role") String role) {
 
-        return ResponseEntity.ok(payment_service.getPaymentByOrderId(order_id));
+        PaymentResponse payment = payment_service.getPaymentByOrderId(order_id);
+
+        boolean is_admin = role.equals("ADMIN");
+        boolean is_owner = payment.getUserId().toString().equals(user_id);
+
+        if (!is_admin && !is_owner) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.ok(payment);
     }
 
     @PostMapping("/refund")

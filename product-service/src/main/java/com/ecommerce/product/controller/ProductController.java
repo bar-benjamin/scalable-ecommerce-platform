@@ -88,7 +88,12 @@ public class ProductController {
     @PostMapping("/{id}/stock/deduct")
     public ResponseEntity<Void> deductStock(
             @PathVariable Long id,
-            @Valid @RequestBody StockDeductRequest request) {
+            @Valid @RequestBody StockDeductRequest request,
+            @RequestHeader("X-User-Role") String role) {
+
+        if (!role.equals("ADMIN")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         product_service.deductStock(id, request);
         return ResponseEntity.ok().build();

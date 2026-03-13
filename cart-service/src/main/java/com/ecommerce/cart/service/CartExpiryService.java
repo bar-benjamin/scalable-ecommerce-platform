@@ -30,11 +30,13 @@ public class CartExpiryService {
     public void purgeExpiredCarts() {
         Instant expiry_threshold = Instant.now().minus(expiry_minutes, ChronoUnit.MINUTES);
 
-        int deleted = cart_repository.deleteExpiredCarts(expiry_threshold);
+        int items_deleted = cart_repository.deleteExpiredCartItems(expiry_threshold);
+        int carts_deleted = cart_repository.deleteExpiredCarts(expiry_threshold);
 
-        if (deleted > 0) {
-            log.info("Cart expiry job: purged {} expired cart(s) " +
-                    "(inactive for more than {} minutes)", deleted, expiry_minutes);
+        if (carts_deleted > 0) {
+            log.info("Cart expiry job: purged {} cart(s) and {} item(s) " +
+                            "(inactive for more than {} minutes)",
+                    carts_deleted, items_deleted, expiry_minutes);
         } else {
             log.debug("Cart expiry job: no expired carts found");
         }
