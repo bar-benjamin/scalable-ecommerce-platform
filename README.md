@@ -161,3 +161,14 @@ GET http://localhost:8080/api/products
 
 Each service is an independent subproject with its own `build.gradle`, `Dockerfile`, and `application.yml`.
 Shared dependency versions are declared once in the root `build.gradle` via Spring Boot.
+
+#### Future Improvements
+
+- **Observability**  
+  Integrate monitoring and logging tools such as Prometheus, Grafana, and the ELK stack to track system health, metrics, and logs across all microservices.
+
+- **CI/CD**  
+  Set up a continuous integration and deployment pipeline (e.g., GitHub Actions) to automate testing, building, and deployment of services.
+
+- **Frontend**  
+  Develop a web-based frontend application that interacts with the backend microservices to provide a complete user-friendly e-commerce experience.
